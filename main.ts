@@ -2,6 +2,9 @@ namespace SpriteKind {
     export const FireFighter = SpriteKind.create()
     export const Plane = SpriteKind.create()
 }
+namespace StatusBarKind {
+    export const PlayerHealth = StatusBarKind.create()
+}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (isUsed == 0) {
         isUsed = 1
@@ -20,7 +23,24 @@ controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     true
     )
 })
-statusbars.onStatusReached(StatusBarKind.Energy, statusbars.StatusComparison.LTE, statusbars.ComparisonType.Percentage, 50, function (status) {
+info.onCountdownEnd(function () {
+    info.setScore(game.runtime() / 100)
+    game.over(true, effects.confetti)
+})
+sprites.on_fire_destroyed(function (location) {
+    scene.clearParticleEffectsAtLocation(location)
+    tiles.setTileAt(location, assets.tile`burnt tree`)
+    music.thump.play()
+})
+controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
+    animation.runImageAnimation(
+    mySprite,
+    assets.animation`myAnim0`,
+    200,
+    true
+    )
+})
+statusbars.onStatusReached(StatusBarKind.PlayerHealth, statusbars.StatusComparison.LTE, statusbars.ComparisonType.Percentage, 50, function (status) {
     if (game.runtime() > 5000) {
         mySprite.sayText("(I can do this!)", 2000, true)
         if (Tip == 0) {
@@ -54,22 +74,6 @@ statusbars.onStatusReached(StatusBarKind.Energy, statusbars.StatusComparison.LTE
             Tip += 1
         }
     }
-})
-info.onCountdownEnd(function () {
-    game.over(true, effects.confetti)
-})
-sprites.on_fire_destroyed(function (location) {
-    scene.clearParticleEffectsAtLocation(location)
-    tiles.setTileAt(location, assets.tile`burnt tree`)
-    music.thump.play()
-})
-controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
-    animation.runImageAnimation(
-    mySprite,
-    assets.animation`myAnim0`,
-    200,
-    true
-    )
 })
 scene.onOverlapTile(SpriteKind.Water, assets.tile`tree fire`, function (sprite, location) {
     sprite.destroy()
@@ -150,12 +154,12 @@ hud.fire_hud(true)
 hud.forest_hud(true)
 hud.forest_hud_healthy(5)
 hud.forest_hud_label("Forest HP")
-playerHealth = statusbars.create(20, 3, StatusBarKind.Energy)
+playerHealth = statusbars.create(20, 3, StatusBarKind.PlayerHealth)
 playerHealth.setColor(7, 2)
 playerHealth.max = 100
 playerHealth.attachToSprite(mySprite, 1, 0)
-music.playMelody("E B C5 A B G A F ", 120)
 isUsed = 0
+music.playMelody("E B C5 A B G A F ", 120)
 info.startCountdown(90)
 game.onUpdate(function () {
     sprites.random_spread()
@@ -165,6 +169,7 @@ game.onUpdateInterval(7000, function () {
 })
 game.onUpdateInterval(100, function () {
     if (playerHealth.value <= 0) {
+        info.setScore(game.runtime() / 100)
         game.over(false, effects.dissolve)
     }
     playerHealth.value += 0.2
